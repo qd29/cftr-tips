@@ -4,18 +4,24 @@ library(tools)
 library(sangerseqR)
 options(warn=-1)
 
+# preview_text=t(HTML(paste("This is a preview version of <i>CFTR</i>-TIPS. Source codes are available <a href='https://github.com/qd29/cftr-tips' 
+#                           target='_blank'>here</a> for full implementation."
+#                           ,actionLink(inputId="preview_help",label=HTML("<span class='glyphicon glyphicon-question-sign'></span><br>")))))
+preview_text=""
+
 ui=fluidPage(
   theme=bs_theme(version=5),
-
+  
   titlePanel(HTML("<i>CFTR</i>-TIPS: <i>CFTR</i> Tool for Inferring Poly-T/TG Size"),windowTitle="CFTR-TIPS"),
+  preview_text,
   br(),
-  h5("Required information"),
+  h5(HTML(paste("Required information",actionLink(inputId="reqinfo_help",label=HTML("<span class='glyphicon glyphicon-question-sign'></span>"))))),
   fluidRow(
     column(width=4,fileInput(inputId="fwdab1","Forward ab1 file:")),
     column(width=4,fileInput(inputId="revab1","Reverse ab1 file:")),
   ),
   
-  h5("Optional information"),
+  h5(HTML(paste("Optional information",actionLink(inputId="optinfo_help",label=HTML("<span class='glyphicon glyphicon-question-sign'></span>"))))),
   fluidRow(
     column(width=2,numericInput("mint","Minimum # of T:",value="3")),
     column(width=2,numericInput("maxt","Maximum # of T:",value="11")),
@@ -36,15 +42,15 @@ ui=fluidPage(
 
   plotOutput("img1",height="800px"),
   fluidRow(
-    column(width=1,actionButton("prev","Previous",width="100%"),),
-    column(width=1,actionButton("next1","Next",width="100%"),),
+    column(width=2,actionButton("prev","Previous",width="100%"),),
+    column(width=2,actionButton("next1","Next",width="100%"),),
   ),
   br(),
   hr(),
 
   t(HTML("Contact: <a href='mailto:ding.qiliang@mayo.edu'>Qiliang (Andy) Ding, Ph.D.</a>")),
   br(),
-  t(HTML("<b>© 2024 Mayo Foundation for Medical Education and Research</b> (Version: 20240308)")),
+  t(HTML("<b>© 2024 Mayo Foundation for Medical Education and Research</b> (Version: 20240316)")),
 )
 
 server=function(input,output){
@@ -334,7 +340,7 @@ server=function(input,output){
     if(x$rank==0){
       par(mfrow=c(3,1),mar=c(2,4,2,2))
       plot(0,0,col=rgb(0,0,0,0),axes=F,xlab="",ylab="",xlim=c(0,10),ylim=c(0,10),xaxs="i")
-      text(5,5,"Please upload the forward and reverse ab1 files, then press the Run Analysis button.",cex=4)
+      text(5,5,"Please upload the forward and reverse ab1 files,\n press the Run Analysis button,\n and wait for the results to load.",cex=4)
       plot(0,0,col=rgb(0,0,0,0),axes=F,xlab="",ylab="",xlim=c(0,10),ylim=c(0,10),xaxs="i")
       plot(0,0,col=rgb(0,0,0,0),axes=F,xlab="",ylab="",xlim=c(0,10),ylim=c(0,10),xaxs="i")
     }
@@ -348,7 +354,7 @@ server=function(input,output){
     else if(x$rank==10002){
       par(mfrow=c(3,1),mar=c(2,4,2,2))
       plot(0,0,col=rgb(0,0,0,0),axes=F,xlab="",ylab="",xlim=c(0,10),ylim=c(0,10),xaxs="i")
-      text(5,5,"Unable to detect the poly-T/TG tract in the forward and/or reverse trace.\nCheck if correct files were uploaded.\nFile names must end in .ab1.\nIf issue presists, consider manual review of the Sanger traces.",cex=4)
+      text(5,5,"Unable to detect the poly-T/TG tract\nin the forward and/or reverse trace.\n\nCheck if correct files were uploaded.\nFile names must end in .ab1.\nIf issue presists, consider manual review of the Sanger traces.",cex=4)
       plot(0,0,col=rgb(0,0,0,0),axes=F,xlab="",ylab="",xlim=c(0,10),ylim=c(0,10),xaxs="i")
       plot(0,0,col=rgb(0,0,0,0),axes=F,xlab="",ylab="",xlim=c(0,10),ylim=c(0,10),xaxs="i")
     }
@@ -382,7 +388,8 @@ server=function(input,output){
       }
       
       plot(0,0,col=rgb(0,0,0,0),axes=F,xlab="",ylab="",xaxs="i",xlim=c(x$fwdbasepos[x$fwdstart-6],x$fwdbasepos[x$fwdend+6]),
-           ylim=c(-500,max(x$fwdsigtrace)*1.2),main="Forward Trace",cex.main=2)
+           ylim=c(-max(x$fwdsigtrace[x$fwdbasepos[x$fwdstart-6]:x$fwdbasepos[x$fwdend+6]])*0.2,
+                  max(x$fwdsigtrace[x$fwdbasepos[x$fwdstart-6]:x$fwdbasepos[x$fwdend+6]])*1.3),main="Forward Trace",cex.main=2)
       rect(x$fwdbasepos[x$fwdstart],-1000,x$fwdbasepos[x$fwdend],max(x$fwdsigtrace)*2,col="#f0f0f0",border=F)
       box()
       axis(2,cex.axis=1.5)
@@ -398,12 +405,13 @@ server=function(input,output){
       strfs[which(strfs=="K")]="T/G"
       for(i in 1:fwdmaxlen){
         if (fwdpolypos[i]>1){
-          rect(x$fwdbasepos[x$fwdstart+i-1]-5,-250-max(x$fwdsigtrace)*0.05,x$fwdbasepos[x$fwdstart+i-1]+5,-250+max(x$fwdsigtrace)*0.05,
+          rect(x$fwdbasepos[x$fwdstart+i-1]-5,-max(x$fwdsigtrace[x$fwdbasepos[x$fwdstart-6]:x$fwdbasepos[x$fwdend+6]])*0.2,
+               x$fwdbasepos[x$fwdstart+i-1]+5,-max(x$fwdsigtrace[x$fwdbasepos[x$fwdstart-6]:x$fwdbasepos[x$fwdend+6]])*0.1,
                border=NA,col="#9ecae1")
         }
       }
       for (i in 1:length(strfs)){
-        text(x$fwdbasepos[x$fwdstart+i-1],-250,label=strfs[i],col=strfcol[i],cex=2)
+        text(x$fwdbasepos[x$fwdstart+i-1],-max(x$fwdsigtrace[x$fwdbasepos[x$fwdstart-6]:x$fwdbasepos[x$fwdend+6]])*0.15,label=strfs[i],col=strfcol[i],cex=2)
       }
      
       revpolypos=c()
@@ -425,7 +433,8 @@ server=function(input,output){
       }
       
       plot(0,0,col=rgb(0,0,0,0),axes=F,xlab='',ylab='',xaxs='i',xlim=c(x$revbasepos[x$revend+6],x$revbasepos[x$revstart-6]),
-           ylim=c(-500,max(x$revsigtrace)*1.2),main='Reverse Trace',cex.main=2)
+           ylim=c(-max(x$revsigtrace[x$revbasepos[x$revend+6]:x$revbasepos[x$revstart-6]])*0.2,
+                  max(x$revsigtrace[x$revbasepos[x$revend+6]:x$revbasepos[x$revstart-6]])*1.3),main='Reverse Trace',cex.main=2)
       rect(x$revbasepos[x$revstart],-1000,x$revbasepos[x$revend],max(x$revsigtrace)*2,col="#f0f0f0",border=F)
       box()
       axis(2,cex.axis=1.5)
@@ -442,14 +451,42 @@ server=function(input,output){
       strrs[which(strrs=="K")]="T/G"
       for(i in 1:revmaxlen){
         if (revpolypos[i]>1){
-          rect(x$revbasepos[x$revstart+i-1]-5,-250-max(x$revsigtrace)*0.05,x$revbasepos[x$revstart+i-1]+5,-250+max(x$revsigtrace)*0.05,
+          rect(x$revbasepos[x$revstart+i-1]-5,-max(x$revsigtrace[x$revbasepos[x$revend+6]:x$revbasepos[x$revstart-6]])*0.2,
+               x$revbasepos[x$revstart+i-1]+5,-max(x$revsigtrace[x$revbasepos[x$revend+6]:x$revbasepos[x$revstart-6]])*0.1,
                border=NA,col="#9ecae1")
         }
       }
       for (i in 1:length(strrs)){
-        text(x$revbasepos[x$revstart+i-1],-250,label=strrs[i],col=strrcol[i],cex=2)
+        text(x$revbasepos[x$revstart+i-1],-max(x$revsigtrace[x$revbasepos[x$revend+6]:x$revbasepos[x$revstart-6]])*0.15,label=strrs[i],col=strrcol[i],cex=2)
       }
     }
+  })
+  
+  observeEvent(input$reqinfo_help,{
+    showModal(modalDialog(title="Help - Required Information",size="l",easyClose=T,
+                          HTML("Please upload the forward and reverse Sanger chromatograms of the same sample.<br>
+                               At a minimum, the chromatograms must cover the (TG)mTn tract ± 15 bp.<br>
+                               The file extensions <b>must</b> be in .ab1.")))
+  })
+  
+  observeEvent(input$optinfo_help,{
+    showModal(modalDialog(title="Help - Optional Information",size="l",easyClose=T,
+                          HTML("The search space of possible (TG)mTn allele combinations can be re-defined using the <b>“Minimum # of T”, “Maximum # of T”,
+                          “Minimum # of TG”, and “Maximum # of TG”</b> parameters. Given that the default search space encompasses all known (TG)mTn alleles, 
+                               adjustments to these parameters will be rarely necessary, if at all.<br><br>
+                               You may also adjust the <b>“Minimum informative Sanger trace signal”</b> parameter. In the Sanger chromatograms, positions 
+                               with signal intensity below this value will not be used to compare the observed vs. expected patterns. We recommend adjusting 
+                               this parameter based on the overall quality of your Sanger chromatograms.")))
+  })
+  
+  observeEvent(input$preview_help,{
+    showModal(modalDialog(title="Limitations - Preview Version",size="l",easyClose=T,
+                          HTML("1. <i>CFTR</i>-TIPS responds slower in the preview version than the full implementation on local computers. Occasionally, the
+                          preview website may become unresponsive. In this scenario, we recommend trying again in a few minutes. These issues are due to
+                          resource limitations of the website hosting service.<br><br>
+                          2. In the preview version, you must reload the webpage if you would like to analyze chromatograms of another sample. In other words,
+                          the preview website does not allow repeated upload of chromatograms. The full implementation does not have this limitation.
+                          <br><br>3. While we do not retain any uploaded data, de-identifying your samples when using the preview version is recommended.")))
   })
 }
 
